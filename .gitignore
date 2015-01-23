@@ -45,3 +45,4 @@ Temporary Items
 # Project-specific
 /office365
 /node_modules/xmlhttprequest
+/node_modules/simple-oauth2

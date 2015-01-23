@@ -1,11 +1,20 @@
+// Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See full license at the bottom of this file.
 var querystring = require("querystring");
 var https = require("https");
 var exchange = require("exchange");
 
-var clientId = "b7c6f617-f7f5-4f11-8ced-2e39aa23c352";
-var clientSecret = "TCmtjhvNoazeZYPIrq58AEGmRED/dYcixgS/+ELkiyU=";
-var redirectUri = "http://localhost:8000/authorize";
+var clientId = "YOUR CLIENT ID HERE";
+var clientSecret = "YOUR SECRET HERE";
+var credentials = {
+  clientID: clientId,
+  clientSecret: clientSecret,
+  site: "https://login.windows.net/common",
+  authorizationPath: "/oauth2/authorize",
+  tokenPath: "/oauth2/token"
+}
+var oauth2 = require("simple-oauth2")(credentials)
 
+var redirectUri = "http://localhost:8000/authorize";
 var authority = "login.windows.net"
 var authUrl = "https://" + authority + "/common/oauth2/authorize?client_id=" + clientId + "&redirect_uri=XXXXX&response_type=code";
 var tokenPath = "/common/oauth2/token"
@@ -13,8 +22,21 @@ var tokenPath = "/common/oauth2/token"
 function getAccessToken(resource, session) {
   console.log("getAccessToken called for " + session);
   var deferred = new exchange.Microsoft.Utility.Deferred();
-  // Need to check if the token is about to expire and refresh
-  deferred.resolve(session.accessToken);
+  if (session.token.expired()) {
+    session.token.refresh(function(error, result) {
+      if (error) {
+        console.log("Refresh token error: ", error.message);
+      }
+      session.token = result;
+      console.log("NEW ACCESS TOKEN: ", session.token.token.access_token);
+      deferred.resolve(session.token.token.access_token);
+    });
+  }
+  else {
+    // Return the token right away
+    console.log("EXISTING ACCESS TOKEN: ", session.token.token.access_token);
+    deferred.resolve(session.token.token.access_token);
+  }
   return deferred;
 }
 
@@ -25,51 +47,55 @@ function getAccessTokenFn(resource, session) {
 }
 
 function getAuthUrl() {
-  var returnVal = authUrl.replace('XXXXX', querystring.escape(redirectUri));
+  var returnVal = oauth2.authCode.authorizeURL({
+    redirect_uri: redirectUri
+  });
   console.log("Generated auth url: " + returnVal);
   return returnVal;
 }
 
 function getTokenFromCode(auth_code, resource, response, redirect, session) {
-  var jsonPayload = {
-    grant_type: 'authorization_code',
+  var token;
+  oauth2.authCode.getToken({
     code: auth_code,
     redirect_uri: redirectUri,
-    resource: resource,
-    client_id: clientId,
-    client_secret: clientSecret
-  };
-
-  var options = {
-    hostname: authority,
-    path: tokenPath,
-    method: 'POST'
-  };
-  
-  var responsePayload = "";
-  
-  var request = https.request(options, function(res) {
-    console.log("Response received from token request.");
-    console.log("Status: " + response.statusCode);
-    res.setEncoding('utf8');
-    res.on('data', function(chunk) {
-      console.log("Received response chunk: " + chunk);
-      responsePayload += chunk;
-    });
-    res.on('end', function() {
-      // Send full response back.
-      console.log("Full payload: " + responsePayload);
-      session.updateTokens(JSON.parse(responsePayload));
+    resource: resource
+    }, function (error, result) {
+      if (error) {
+        console.log("Access token error: ", error.message);
+      }
+      token = oauth2.accessToken.create(result);
+      console.log("Token created: ", token.token);
+      session.updateTokens(token);
       console.log("Redirecting to " + redirect);
       response.writeHead(302, {'Location': redirect});
-      response.end();
+      response.end();;
     });
-  });
-  console.log("Sending payload: " + querystring.stringify(jsonPayload));
-  request.write(querystring.stringify(jsonPayload));
-  request.end();
 }
 
 exports.getAuthUrl = getAuthUrl;
 exports.getTokenFromCode = getTokenFromCode;
 exports.getAccessTokenFn = getAccessTokenFn;
+
+/*
+  MIT License: 
+
+  Permission is hereby granted, free of charge, to any person obtaining 
+  a copy of this software and associated documentation files (the 
+  ""Software""), to deal in the Software without restriction, including 
+  without limitation the rights to use, copy, modify, merge, publish, 
+  distribute, sublicense, and/or sell copies of the Software, and to 
+  permit persons to whom the Software is furnished to do so, subject to 
+  the following conditions: 
+
+  The above copyright notice and this permission notice shall be 
+  included in all copies or substantial portions of the Software. 
+
+  THE SOFTWARE IS PROVIDED ""AS IS"", WITHOUT WARRANTY OF ANY KIND, 
+  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
+  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
+  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE 
+  LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION 
+  OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION 
+  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
