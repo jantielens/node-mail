@@ -1,6 +1,11 @@
 # Node.js Mail/Calendar Sample #
 
-This sample is a proof-of-concept sample that uses the [Microsoft Office 365 APIs Client Libraries for Cordova Applications](https://www.nuget.org/packages/Microsoft.Office365.ClientLib.JS/) from a pure Node.js server app. The client libraries were designed to be run from Cordova-based client apps, so this isn't really a recommended solution for real-world applications.
+This sample is a proof-of-concept sample that uses the [Microsoft Office 365 APIs Client Libraries for Cordova Applications](https://www.nuget.org/packages/Microsoft.Office365.ClientLib.JS/) from a pure Node.js server app. The client libraries were designed to be run from Cordova-based client apps, so this solution might not work in all situations.
+
+## Tricks used ##
+
+- To load in the exchange.js file, which is not a Node module, I used the method described [here](http://stackoverflow.com/questions/5171213/load-vanilla-javascript-libraries-into-node-js).
+- The exchange.js file uses the AJAX XMLHttpRequest object for sending requests. To get it working quickly without having to modify exchange.js, I used the node-XMLHttpRequest module.
 
 ## Required software ##
 
