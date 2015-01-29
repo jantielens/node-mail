@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See full license at the bottom of this file.
 var querystring = require("querystring");
 var https = require("https");
-var exchange = require("exchange");
+var exchange = require("./lib/exchange");
 
 var clientId = "YOUR CLIENT ID HERE";
 var clientSecret = "YOUR SECRET HERE";
