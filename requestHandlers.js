@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See full license at the bottom of this file.
 var querystring = require("querystring"),
     url = require("url"),
-    exchange = require("exchange"),
+    exchange = require("./lib/exchange"),
     authHelper = require("./authHelper"),
     SessionManager = require("./sessionManager").SessionManager;
     
