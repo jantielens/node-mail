@@ -1,0 +1,32 @@
+{
+  "name": "node-mail",
+  "version": "1.0.0",
+  "description": "Sample use of Office 365 Javascript API",
+  "main": "index.js",
+  "dependencies": {
+    "simple-oauth2": "^0.2.1",
+    "xmlhttprequest": "^1.7.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jasonjoh/node-mail.git"
+  },
+  "keywords": [
+    "o365",
+    "office",
+    "sdk",
+    "api",
+    "sample"
+  ],
+  "author": "Jason Johnston",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jasonjoh/node-mail/issues"
+  },
+  "homepage": "https://github.com/jasonjoh/node-mail"
+}
