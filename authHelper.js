@@ -1,13 +1,10 @@
 // Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See full license at the bottom of this file.
-var querystring = require("querystring");
-var https = require("https");
 var exchange = require("./lib/exchange");
+var clientId = require("./clientId");
 
-var clientId = "YOUR CLIENT ID HERE";
-var clientSecret = "YOUR SECRET HERE";
 var credentials = {
-  clientID: clientId,
-  clientSecret: clientSecret,
+  clientID: clientId.clientId,
+  clientSecret: clientId.clientSecret,
   site: "https://login.windows.net/common",
   authorizationPath: "/oauth2/authorize",
   tokenPath: "/oauth2/token"
@@ -15,8 +12,6 @@ var credentials = {
 var oauth2 = require("simple-oauth2")(credentials)
 
 var redirectUri = "http://localhost:8000/authorize";
-var authority = "login.windows.net"
-var authUrl = "https://" + authority + "/common/oauth2/authorize?client_id=" + clientId + "&redirect_uri=XXXXX&response_type=code";
 var tokenPath = "/common/oauth2/token"
 
 function getAccessToken(resource, session) {

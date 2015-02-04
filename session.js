@@ -1,10 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See full license at the bottom of this file.
 function Session() {
   this.sessionId = generateUUID();
-  //this.accessToken = "";
-  //this.refreshToken = "";
-  //this.tokenExpires = new Date();
   this.token;
+  this.userName;
   
   this.toString = function() {
     return this.sessionId;
@@ -12,27 +10,55 @@ function Session() {
   
   this.updateTokens = function(token) {
     console.log("updateTokens called for " + this.sessionId);
-    //this.accessToken = token.access_token;
-    //this.refreshToken = token.refresh_token;
-    //this.tokenExpires = new Date(token.expires_on * 1000);
     this.token = token;
-    
-    //console.log("Access token: " + this.accessToken);
-    //console.log("Refresh token: " + this.refreshToken);
-    //console.log("Expires: " + this.tokenExpires);
-    //console.log("Token: " + token);
+    var idToken = parseIdToken(token.token.id_token);
+    this.userName = idToken.name;
+  }
+  
+  this.isLoggedIn = function() {
+    if (this.token) {
+      return true;
+    }
+    return false;
+  }
+  
+  this.logout = function() {
+      this.token = null;
+      this.userName = "";
   }
 }
 
 function generateUUID(){
-    var d = new Date().getTime();
-    var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        var r = (d + Math.random()*16)%16 | 0;
-        d = Math.floor(d/16);
-        return (c=='x' ? r : (r&0x3|0x8)).toString(16);
-    });
-    return uuid;
+  var d = new Date().getTime();
+  var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      var r = (d + Math.random()*16)%16 | 0;
+      d = Math.floor(d/16);
+      return (c=='x' ? r : (r&0x3|0x8)).toString(16);
+  });
+  return uuid;
 };
+
+function parseIdToken(idToken) {
+   console.log("parseIdToken called with", idToken);
+   // Split the token into its parts. Parts are separated
+   // by a '.'.
+   var tokenParts = idToken.split('.');
+   // The first part is the header, which we don't care about
+   // The second part is the actual payload, which we do care about
+   var payload = tokenParts[1];
+   console.log("Split results:", payload);
+   console.log("LENGTH:", payload.length);
+   
+   // The payload is base64-encoded, so decode it.
+   var decodedPayload = new Buffer(payload, 'base64').toString('utf8');
+   console.log("Decoded:", decodedPayload);
+   
+   // Now just JSON parse it
+   var jsonToken = JSON.parse(decodedPayload);
+   console.log("Name:", jsonToken.name);
+   console.log("Email:", jsonToken.upn);
+   return jsonToken;
+}
 
 exports.Session = Session;
 

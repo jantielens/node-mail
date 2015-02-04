@@ -1,20 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See full license at the bottom of this file.
-var server = require("./server");
-var router = require("./router");
-var requestHandlers = require("./requestHandlers");
 
-var handle = {};
-handle["/"] = requestHandlers.home;
-handle["/mail"] = requestHandlers.mail;
-handle["/calendar"] = requestHandlers.calendar;
-handle["/contacts"] = requestHandlers.contacts;
-handle["/delete"] = requestHandlers.deleteItem;
-handle["/edit"] = requestHandlers.editItem;
-handle["/authorize"] = requestHandlers.authorize;
-handle["/logout"] = requestHandlers.logout;
-handle["/css/styles.css"] = requestHandlers.serveCss;
-
-server.start(router.route, handle);
+// Register your app in Azure AD to get these values
+exports.clientId = "YOUR CLIENT ID HERE";
+exports.clientSecret = "YOUR CLIENT SECRET HERE";
 
 /*
   MIT License: 
