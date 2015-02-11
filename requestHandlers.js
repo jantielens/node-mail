@@ -2,6 +2,7 @@
 var querystring = require("querystring"),
     url = require("url"),
     fs = require("fs"),
+    formidable = require("formidable"),
     exchange = require("./lib/exchange"),
     authHelper = require("./authHelper"),
     SessionManager = require("./sessionManager").SessionManager;
@@ -134,7 +135,111 @@ function deleteItem(response, request) {
   }
 }
 
-function editItem(response, request) {
+function editField(response, request) {
+  console.log("Request handler 'edit' was called.");
+  var session = sessionManager.getSession(request, response);
+  console.log("Session: " + session);
+  
+  if (session.isLoggedIn()) {
+    var url_parts = url.parse(request.url, true);
+    console.log("Item type:", url_parts.query.itemType);
+    console.log("Item ID:", url_parts.query.itemId);
+    console.log("Field name:", url_parts.query.fieldName);
+    console.log("Current value:", url_parts.query.value);
+    
+    renderEditFieldPage(response, session, url_parts.query.itemType, url_parts.query.itemId, 
+      url_parts.query.fieldName, url_parts.query.value);
+  }
+  else {
+    console.log("User not logged in, redirecting to home page.");
+    redirectTo(response, "/");
+  }
+}
+
+function updateItem(response, request) {
+  console.log("Request handler 'update' was called.");
+  if (request.method == 'POST') { 
+    var session = sessionManager.getSession(request, response);
+    console.log("Session: " + session);
+    
+    if (session.isLoggedIn()) {
+      var outlookClient = new exchange.Microsoft.OutlookServices.Client('https://outlook.office365.com/api/v1.0', 
+        authHelper.getAccessTokenFn('https://outlook.office365.com/', session));
+        
+      var form = new formidable.IncomingForm();
+      form.parse(request, function(error, fields, files) {
+        console.log("Item type:", fields.itemType);
+        console.log("Item ID:", fields.itemId);
+        console.log("Field name:", fields.fieldName);
+        console.log("Value:", fields.value);
+        
+        var fetcher;
+        switch(fields.itemType) {
+          case 'message':
+            redirectUrl = "/mail"
+            fetcher = outlookClient.me.messages.getMessage(fields.itemId);
+          break;
+        case 'event':
+          redirectUrl = "/calendar"
+          fetcher = outlookClient.me.events.getEvent(fields.itemId);
+          break;
+        case 'contact':
+          redirectUrl = "/contacts"
+          fetcher = outlookClient.me.contacts.getContact(fields.itemId);
+          break;
+        default:
+          redirectUrl = "/"
+        }
+        
+        if (fetcher) {
+          fetcher.fetch().then(function (item) {
+            console.log("Item retrieved.");
+            
+            var fieldUpdated = false;
+            switch(fields.fieldName) {
+              case 'subject':
+                item.subject = fields.value;
+                fieldUpdated = true;
+                break;
+              case 'mobilePhone1':
+                item.mobilePhone1 = fields.value;
+                fieldUpdated = true;
+                break;
+            }
+            
+            if (fieldUpdated) {
+              item.update().then(function () {
+                console.log("Item updated.");
+                redirectTo(response, redirectUrl);
+              }, function (error) {
+                console.log("ERROR:", error);
+                redirectTo(response, redirectUrl);
+              });
+            }
+            else {
+              console.log("Invalid field name.");
+              redirectTo(response, redirectUrl);
+            }
+          }, function (error) {
+            console.log("ERROR:", error);
+            redirectTo(response, redirectUrl);
+          });
+        }
+        else {
+          console.log("Invalid item type!");
+          redirectTo(response, redirectUrl);
+        }
+      });   
+    }
+    else {
+      console.log("User not logged in, redirecting to home page.");
+      redirectTo(response, "/");
+    }
+  }
+  else {
+    console.log(request.method, "not supported.");
+    redirectTo(response, "/");
+  }
 }
 
 // Handler for /authorize (redirect URL for OAuth code grant flow)
@@ -213,14 +318,14 @@ function renderMailPage(response, session) {
   
   var altRow = false;
   
-  outlookClient.me.folders.getFolder('Inbox').messages.getMessages()
+  outlookClient.me.messages.getMessages()
   .orderBy('DateTimeReceived desc').fetchAll(10).then(function (result) {
     result.forEach(function (message) {
       var rowClass = altRow ? "alt" : "normal";
       var from = message.from ? message.from.emailAddress.name : "NONE";
       response.write('<tr class="' + rowClass + '"><td class="button">' + createDeleteButton(message.id, 'message') + 
         '</td><td>' + from + 
-        '</td><td>' + message.subject + createEditButton(message.id, 'message', 'subject') +
+        '</td><td>' + message.subject + createEditButton(message.id, 'message', 'subject', message.subject) +
         '</td><td>' + message.dateTimeReceived.toString() + '</td></tr>');
       altRow = !altRow;
     });
@@ -250,7 +355,7 @@ function renderCalendarPage(response, session) {
     result.currentPage.forEach(function (event) {
       var rowClass = altRow ? "alt" : "normal";
       response.write('<tr class="' + rowClass + '"><td class="button">' + createDeleteButton(event.id, 'event') + 
-        '</td><td>' + event.subject + createEditButton(event.id, 'event', 'subject') +
+        '</td><td>' + event.subject + createEditButton(event.id, 'event', 'subject', event.subject) +
         '</td><td>' + event.start.toString() + 
         '</td><td>' + event.end.toString() + '</td></tr>');
       altRow = !altRow;
@@ -288,7 +393,7 @@ function renderContactsPage(response, session) {
         '</td><td>' + contact.givenName + 
         '</td><td>' + contact.surname + 
         '</td><td>' + email + 
-        '</td><td>' + mobile + createEditButton(contacts.id, 'contact', 'mobilePhone1') + '</td></tr>');
+        '</td><td>' + mobile + createEditButton(contact.id, 'contact', 'mobilePhone1', mobile) + '</td></tr>');
       altRow = !altRow;
     });
     response.write('</table>');
@@ -301,6 +406,23 @@ function renderContactsPage(response, session) {
     writeSession(response, session);
     response.end();
   });
+}
+
+function renderEditFieldPage(response, session, itemType, itemId, fieldName, value) {
+  response.writeHead(200, {"Content-Type": "text/html"});
+  renderCommonElements(response, session);
+  
+  response.write('<div><span id="table-title">Editing ' + fieldName + '</span></div>');
+  response.write('<form action="/update" method="POST">');
+  response.write('<label for="value">' + fieldName + '</label><br>');
+  response.write('<input class="item-field" type="text" name="value" id="value" value="' + value + '" /><br>');
+  response.write('<input type="hidden" name="itemType" value="' + itemType + '" />');
+  response.write('<input type="hidden" name="itemId" value="' + itemId + '" />');
+  response.write('<input type="hidden" name="fieldName" value="' + fieldName + '" />');
+  response.write('<input type="submit" value="Save Changes" />');
+  
+  writeSession(response, session);
+  response.end();
 }
 
 function renderCommonElements(response, session) {
@@ -326,8 +448,8 @@ function createDeleteButton(itemId, itemType) {
   return buttonElement;
 }
 
-function createEditButton(itemId, itemType, fieldName) {
-  var editUri = '/edit?' + querystring.stringify({itemId: itemId, itemType: itemType, fieldName: fieldName});
+function createEditButton(itemId, itemType, fieldName, value) {
+  var editUri = '/edit?' + querystring.stringify({itemId: itemId, itemType: itemType, fieldName: fieldName, value: value});
   var buttonElement = '<a class="action" href="' + editUri + '">Change</a>';
   return buttonElement;
 }
@@ -351,7 +473,8 @@ exports.mail = mail;
 exports.calendar = calendar;
 exports.contacts = contacts;
 exports.deleteItem = deleteItem;
-exports.editItem = editItem;
+exports.editField = editField;
+exports.updateItem = updateItem;
 exports.authorize = authorize;
 exports.logout = logout;
 exports.serveCss = serveCss;
