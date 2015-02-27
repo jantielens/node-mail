@@ -43,7 +43,6 @@ Temporary Items
 .apdisk
 
 # Project-specific
-/lib/exchange/exchange-lib
 /office365
 /node_modules
 npm-debug.log
