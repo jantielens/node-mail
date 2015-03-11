@@ -47,3 +47,14 @@ Temporary Items
 /office365
 /node_modules
 npm-debug.log
+
+# Visual Studio Profiler stuff
+.ntvs_analysis.dat
+node-mail.njs*
+*.sln
+*.suo
+*.etl*
+*.vspx
+*.psess
+/bin
+/obj

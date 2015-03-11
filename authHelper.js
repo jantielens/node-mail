@@ -1,5 +1,5 @@
 // Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See full license at the bottom of this file.
-var exchange = require("./lib/exchange");
+var outlook = require("node-outlook");
 var clientId = require("./clientId");
 
 var credentials = {
@@ -16,7 +16,7 @@ var tokenPath = "/common/oauth2/token"
 
 function getAccessToken(resource, session) {
   console.log("getAccessToken called for " + session);
-  var deferred = new exchange.Microsoft.Utility.Deferred();
+  var deferred = new outlook.Microsoft.Utility.Deferred();
   if (session.token.expired()) {
     session.token.refresh(function(error, result) {
       if (error) {

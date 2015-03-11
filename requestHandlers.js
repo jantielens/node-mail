@@ -3,7 +3,7 @@ var querystring = require("querystring"),
     url = require("url"),
     fs = require("fs"),
     formidable = require("formidable"),
-    exchange = require("./lib/exchange"),
+    outlook = require("node-outlook"),
     authHelper = require("./authHelper"),
     SessionManager = require("./sessionManager").SessionManager;
     
@@ -52,7 +52,8 @@ function calendar(response, request) {
   
   if (session.isLoggedIn()){
     // We have a token, render the calendar
-    renderCalendarPage(response, session);
+    //renderCalendarPage(response, session);
+    renderCalendarPageWithView(response, session);
   }
   else {
     // Need to kick off code grant flow
@@ -83,7 +84,7 @@ function deleteItem(response, request) {
   console.log("Session: " + session);
   
   if (session.isLoggedIn()) {
-    var outlookClient = new exchange.Microsoft.OutlookServices.Client('https://outlook.office365.com/api/v1.0', 
+    var outlookClient = new outlook.Microsoft.OutlookServices.Client('https://outlook.office365.com/api/v1.0', 
       authHelper.getAccessTokenFn('https://outlook.office365.com/', session));
   
     var url_parts = url.parse(request.url, true);
@@ -163,7 +164,7 @@ function updateItem(response, request) {
     console.log("Session: " + session);
     
     if (session.isLoggedIn()) {
-      var outlookClient = new exchange.Microsoft.OutlookServices.Client('https://outlook.office365.com/api/v1.0', 
+      var outlookClient = new outlook.Microsoft.OutlookServices.Client('https://outlook.office365.com/api/v1.0', 
         authHelper.getAccessTokenFn('https://outlook.office365.com/', session));
         
       var form = new formidable.IncomingForm();
@@ -308,7 +309,7 @@ function renderHomePage(response, session) {
 }
 
 function renderMailPage(response, session) {
-  var outlookClient = new exchange.Microsoft.OutlookServices.Client('https://outlook.office365.com/api/v1.0', 
+  var outlookClient = new outlook.Microsoft.OutlookServices.Client('https://outlook.office365.com/api/v1.0', 
     authHelper.getAccessTokenFn('https://outlook.office365.com/', session));
   
   response.writeHead(200, {"Content-Type": "text/html"});
@@ -341,7 +342,7 @@ function renderMailPage(response, session) {
 }
 
 function renderCalendarPage(response, session) {
-  var outlookClient = new exchange.Microsoft.OutlookServices.Client('https://outlook.office365.com/api/v1.0', 
+  var outlookClient = new outlook.Microsoft.OutlookServices.Client('https://outlook.office365.com/api/v1.0', 
     authHelper.getAccessTokenFn('https://outlook.office365.com/', session));
   
   response.writeHead(200, {"Content-Type": "text/html"});
@@ -372,8 +373,46 @@ function renderCalendarPage(response, session) {
   });
 }
 
+function renderCalendarPageWithView(response, session) {
+  var outlookClient = new outlook.Microsoft.OutlookServices.Client('https://outlook.office365.com/api/v1.0', 
+    authHelper.getAccessTokenFn('https://outlook.office365.com/', session));
+  
+  response.writeHead(200, {"Content-Type": "text/html"});
+  renderCommonElements(response, session);
+  response.write('<div><span id="table-title">Your calendar</span></div>');
+  response.write('<table class="item-list"><tr><th class="button"></th><th>Subject</th><th>Start</th><th>End</th></tr>');
+  
+  var altRow = false;
+  
+  var calId = "AAMkADNhMjcxM2U5LWY2MmItNDRjYy05YzgwLWQwY2FmMTU1MjViOABGAAAAAAC_IsPnAGUWR4fYhDeYtiNFBwCDgDrpyW-uTL4a3VuSIF6OAAAAAAEGAACDgDrpyW-uTL4a3VuSIF6OAAAAR19hAAA=";
+  var viewFetcher = outlookClient.me.calendarView.getEvents();
+  
+  viewFetcher.addQuery("startDateTime=2015-03-04T05:00:00Z");
+  viewFetcher.addQuery("endDateTime=2015-03-11T05:00:00Z");
+  
+  viewFetcher.fetch().then(function (result) {
+    result.currentPage.forEach(function (event) {
+      var rowClass = altRow ? "alt" : "normal";
+      response.write('<tr class="' + rowClass + '"><td class="button">' + createDeleteButton(event.id, 'event') + 
+        '</td><td>' + event.subject + createEditButton(event.id, 'event', 'subject', event.subject) +
+        '</td><td>' + event.start.toString() + 
+        '</td><td>' + event.end.toString() + '</td></tr>');
+      altRow = !altRow;
+    });
+    response.write('</table>');
+    writeSession(response, session);
+    response.end();
+  }, function (error) {
+    console.log(error);
+    response.write('</table');
+    response.write("<p>ERROR: " + error + "</p>");
+    writeSession(response, session);
+    response.end();
+  });
+}
+
 function renderContactsPage(response, session) {
-  var outlookClient = new exchange.Microsoft.OutlookServices.Client('https://outlook.office365.com/api/v1.0', 
+  var outlookClient = new outlook.Microsoft.OutlookServices.Client('https://outlook.office365.com/api/v1.0', 
     authHelper.getAccessTokenFn('https://outlook.office365.com/', session));
   
   response.writeHead(200, {"Content-Type": "text/html"});
