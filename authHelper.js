@@ -5,7 +5,7 @@ var clientId = require("./clientId");
 var credentials = {
   clientID: clientId.clientId,
   clientSecret: clientId.clientSecret,
-  site: "https://login.windows.net/common",
+  site: "https://login.microsoftonline.com/common",
   authorizationPath: "/oauth2/authorize",
   tokenPath: "/oauth2/token"
 }
