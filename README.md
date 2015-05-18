@@ -13,7 +13,7 @@ This sample is a proof-of-concept sample that uses the [node-outlook module](htt
 It's assumed that you have Node.js installed before starting.
 
 1. Download or fork the sample project.
-1. [Register the app in Azure Active Directory](https://github.com/jasonjoh/office365-azure-guides/blob/master/RegisterAnAppInAzure.md). The app should be registered as a web app with a Sign-on URL of "http://localhost:8000", and should be given permission to "Read and write access to users' mail", "Have full access to users' calendars", and "Have full access to users' contacts".
+1. [Register the app in Azure Active Directory](https://github.com/jasonjoh/office365-azure-guides/blob/master/RegisterAnAppInAzure.md). The app should be registered as a web app with a Sign-on URL of "http://localhost:8000", and should be given permission to "Read and write access to users' mail", "Have full access to users' calendars", and "Have full access to users' contacts". (note these permissions should be added as "Delegated Permissions")
 1. Edit the `.\clientId.js` file. Copy the client ID for your app obtained during app registration and paste it as the value for the `exports.clientId` variable. Copy the key you created during app registration  and paste it as the value for the `exports.clientSecret` variable. Save the file.
 1. Install all required Node.js modules `npm install`
 1. Start the development server: `npm start`
