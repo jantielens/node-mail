@@ -320,7 +320,7 @@ function renderMailPage(response, session) {
   var altRow = false;
   
   outlookClient.me.messages.getMessages()
-  .orderBy('DateTimeReceived desc').fetchAll(10).then(function (result) {
+  .orderBy('DateTimeReceived desc').fetchAll().then(function (result) {
     result.forEach(function (message) {
       var rowClass = altRow ? "alt" : "normal";
       var from = message.from ? message.from.emailAddress.name : "NONE";
