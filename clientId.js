@@ -3,6 +3,7 @@
 // Register your app in Azure AD to get these values
 exports.clientId = "YOUR CLIENT ID HERE";
 exports.clientSecret = "YOUR CLIENT SECRET HERE";
+exports.clientSecret = "http://YOURURL:8000";
 
 /*
   MIT License: 
