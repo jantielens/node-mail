@@ -11,7 +11,7 @@ var credentials = {
 }
 var oauth2 = require("simple-oauth2")(credentials)
 
-var redirectUri = "http://localhost:8000/authorize";
+var redirectUri = clientId.url + "/authorize";
 var tokenPath = "/common/oauth2/token"
 
 function getAccessToken(resource, session) {
